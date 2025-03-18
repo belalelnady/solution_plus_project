@@ -1,0 +1,22 @@
+FROM mysql:latest
+
+USER root
+
+WORKDIR /bootstrap
+# Set environment variables
+ENV MYSQL_ROOT_PASSWORD=password123
+ENV MYSQL_DATABASE=mydatabase
+ENV MYSQL_USER=devops
+ENV MYSQL_PASSWORD=password123
+
+# Copy SQL scripts to the Docker image
+COPY ./dbModel/initialize.sql ./dbModel/
+
+COPY ./dbModel/schema.sql ./dbModel/
+
+COPY ./dbModel/initializeDB.sh ./dbModel/
+
+RUN   chmod +x ./dbModel/initializeDB.sh
+
+# Expose MySQL port
+EXPOSE 3306
