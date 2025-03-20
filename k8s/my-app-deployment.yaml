@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: my-app
+  name: my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: my-app
+  template:
+    metadata:
+      labels:
+        service: my-app
+    spec:
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox
+        command: ['sh', '-c', 'until nc -z mysql-db 3306; do echo waiting for MySQL; sleep 5; done;']
+      containers:
+      - name: u-container
+        image: belalelnady/solution-plus
+        ports:
+          - containerPort: 4444
+            protocol: TCP
+        envFrom:
+          - configMapRef:
+              name: app-config  # Load all ConfigMap variables
+          - secretRef:
+              name: my-app-secret 
+      restartPolicy: Always
