@@ -1,0 +1,58 @@
+pipeline {
+    agent any  // Run the pipeline on Jenkins
+
+    environment {
+        GITHUB_TOKEN = credentials('github-tocken') // Use the stored GitHub token
+        DOCKER_CREDENTIALS = credentials('dockerhub-tocken') // Use stored Docker Hub token
+        DOCKER_HUB_USERNAME = 'salmahesham1114'  // Your Docker Hub username
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'salma',  
+                    url: 'https://github.com/belalelnady/solution_plus_project.git',
+                    credentialsId: 'github-tocken'
+            }
+        }
+
+        stage('Build Docker Images in Kubernetes Pod') {
+            agent {
+                kubernetes {
+                    yamlFile 'dynamic-docker-build.yaml'  // Reference the external YAML file
+                }
+            }
+            steps {
+                container('docker') {
+                    script {
+                        def appDir = "solution_plus_project/application"
+
+                        sh """
+                            set -e  # Exit immediately if any command fails
+
+                            echo "🔹 Moving into application directory..."
+                            cd ${appDir}
+
+                            echo "🔹 Logging into Docker Hub..."
+                            echo "\$DOCKER_CREDENTIALS_PSW" | docker login -u "\$DOCKER_CREDENTIALS_USR" --password-stdin
+
+                            echo "🚀 Building first Docker image: Web App"
+                            docker build -t \$DOCKER_HUB_USERNAME/web-img:latest -f Dockerfile .
+
+                            echo "🚀 Building second Docker image: MySQL"
+                            docker build -t \$DOCKER_HUB_USERNAME/db-img:latest -f Dockerfile-mysql .
+
+                            echo "📤 Pushing images to Docker Hub..."
+                            docker push \$DOCKER_HUB_USERNAME/web-img:latest
+                            docker push \$DOCKER_HUB_USERNAME/db-img:latest
+
+                            echo "✅ Docker images pushed successfully!"
+                            
+                            docker logout
+                        """
+                    }
+                }
+            }
+        }
+    }
+}

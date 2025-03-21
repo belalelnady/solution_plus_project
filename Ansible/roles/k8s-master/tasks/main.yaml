@@ -121,10 +121,12 @@
     content: "{{ kubeadm_init_output.stdout }}"
     dest: /tmp/kubeadm_output
   delegate_to: localhost
+  become: false
 
 - name: Generate the Join Command
   ansible.builtin.shell: cat /tmp/kubeadm_output | tail -n 2 | sed ':a;N;$!ba;s/\\\n\s*/ /g' > /tmp/join-command
   delegate_to: localhost
+  become: false
 
 - name: Set permissions for the Join Executable
   file:
@@ -132,18 +134,19 @@
     state: file
     mode: '0755'
   delegate_to: localhost
+  become: false
 
 - name: Initialize Kubernetes control plane
   ansible.builtin.command:
-    cmd: mkdir -p $HOME/.kube
+    cmd: mkdir -p /home/salma/.kube
 
 - name: Store Kubernetes initialization output to file
   copy:
     src: /etc/kubernetes/admin.conf
-    dest: $HOME/.kube/config
+    dest: /home/salma/.kube/config
     remote_src: yes
-    owner: "$(id -u)"
-    group: "$(id -g)"
+    owner: salma
+    group: salma
 
 - name: Install Flannel network plugin
   ansible.builtin.shell: su - $ANSIBLE_USER -c "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
