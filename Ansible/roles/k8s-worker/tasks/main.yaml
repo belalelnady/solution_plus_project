@@ -1,0 +1,83 @@
+# tasks file for kubernetes_worker
+- name: Remove Keyrings Directory 
+  ansible.builtin.shell: rm -rf /etc/apt/keyrings
+
+- name: Remove Existing Kubernetes Directory 
+  ansible.builtin.shell: sudo rm -rf /etc/apt/sources.list.d/pkgs_k8s_io_core_stable_v1_30_deb.list
+
+- name: Disable swap
+  ansible.builtin.command:
+    cmd: swapoff -a
+
+- name: Ensure swap is disabled on boot
+  ansible.builtin.command:
+    cmd: sudo sed -i -e '/\/swap.img\s\+none\s\+swap\s\+sw\s\+0\s\+0/s/^/#/' /etc/fstab
+
+- name: Configuring Containerd 
+  ansible.builtin.command:
+    cmd: sudo sh -c "containerd config default > /opt/containerd/config.toml"
+
+- name: Configuring Containerd 
+  ansible.builtin.command:
+    cmd: sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /opt/containerd/config.toml
+
+- name: Reload systemd configuration
+  ansible.builtin.command:
+    cmd: systemctl daemon-reload
+
+- name: Restart containerd service
+  ansible.builtin.service:
+    name: containerd
+    state: restarted
+
+- name: Prepare keyrings directory and update permissions
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Kubernetes GPG key securely
+  ansible.builtin.shell: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /"
+    state: present
+
+- name: Install kubeadm, kubelet, kubectl
+  ansible.builtin.apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+    update_cache: yes
+
+   
+- name: Hold kubelet, kubeadm, kubectl packages
+  ansible.builtin.command:
+    cmd: sudo apt-mark hold kubelet kubeadm kubectl
+
+- name: Replace /etc/default/kubelet contents
+  ansible.builtin.copy:
+    dest: /etc/default/kubelet
+    content: 'KUBELET_EXTRA_ARGS="--cgroup-driver=cgroupfs"'
+
+- name: Reload systemd configuration
+  ansible.builtin.command:
+    cmd: systemctl daemon-reload
+
+- name: Restart kubelet service
+  ansible.builtin.service:
+    name: kubelet
+    state: restarted
+
+- name: Copy join-command file to worker nodes
+  copy:
+    src: /tmp/join-command
+    dest: /tmp/join-command
+    mode: 0755
+
+- name: Join Worker Nodes
+  ansible.builtin.shell: sh /tmp/join-command
+  become: yes 

@@ -1,0 +1,26 @@
+- hosts: all
+  become: true
+  roles:
+    - common
+
+- hosts: master
+  become: true
+  roles:
+    - k8s-master
+
+- hosts: workers
+  become: true
+  roles:
+    - k8s-worker
+
+- hosts: master
+  become: true
+  roles:
+    - jenkins
+    - prometheus
+    - grafana
+
+- hosts: workers
+  become: true
+  roles:
+    - trivy
