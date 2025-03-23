@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: app-config
 data:
-  APP_ENV: prod
+  APP_ENV: prod   
   PORT: "4444"
   DB_HOST: mysql-db
   DB_NAME: mydb

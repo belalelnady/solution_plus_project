@@ -26,6 +26,8 @@ spec:
                 name: mysql-config  # Load all ConfigMap variables
             - secretRef:
                 name: mysql-secret
+
+                
           volumeMounts:
             - mountPath: /var/lib/mysql
               name: mysql-data
@@ -36,6 +38,7 @@ spec:
               name: mysql-db-cm2
               subPath: 1_init.sql
       restartPolicy: Always
+
       volumes:
         - name: mysql-data
           persistentVolumeClaim:
