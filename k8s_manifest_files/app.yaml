@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  labels:
+    app: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      containers:
+      - name: app
+        image: belalelnady/solution-plus
+        env:
+          - name: APP_ENV
+            value: prod  
+
+          - name: DB_HOST
+            value: mysql  
+
+          - name: DB_USER
+            value: solution
+
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret-s
+                key: MYSQL_PASSWORD
+
+          - name: DB_NAME
+            value: solution
+        
+          - name: PORT
+            value: "3000"
+
+        ports:
+        - containerPort: 3000
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-service
+spec:
+  selector:
+    app: app
+  ports:  
+  - protocol: TCP
+    port: 4040       # البورت الخارجي
+    targetPort: 3000 # البورت جوا الكونتينر
+  type: NodePort

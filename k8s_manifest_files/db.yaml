@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0.41
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret-s
+              key: MYSQL_ROOT_PASSWORD
+        - name: MYSQL_DATABASE
+          value: solution
+        - name: MYSQL_USER
+          value: solution
+
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret-s
+              key: MYSQL_PASSWORD
+        args:
+          - --default-authentication-plugin=mysql_native_password
+        ports:
+        - containerPort: 3306
+
+
+        volumeMounts:
+          - mountPath: /var/lib/mysql
+            name: mysql-storage
+          - mountPath: /docker-entrypoint-initdb.d/0_init.sql
+            name: schema-config
+            subPath: 0_init.sql
+
+          - mountPath: /docker-entrypoint-initdb.d/1_init.sql
+            name: init-config
+            subPath: 1_init.sql
+
+      volumes:
+      - name: mysql-storage
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+
+      - name: schema-config
+        configMap:
+          name: schema-config
+          items:
+            - key: schema.sql
+              path: 0_init.sql
+
+      - name: init-config
+        configMap:
+          name: init-config
+          items:
+            - key: initialize.sql
+              path: 1_init.sql
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  selector:
+    app: mysql
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
