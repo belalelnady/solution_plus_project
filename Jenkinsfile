@@ -5,7 +5,6 @@ pipeline {
         GITHUB_TOKEN = credentials('github-token') // GitHub token stored in Jenkins credentials
         DOCKER_CREDENTIALS = credentials('dockerhub-tocken') // Docker Hub token
         DOCKER_HUB_USERNAME = 'salmahesham1114'  // Your Docker Hub username
-        LAST_COMMIT_FILE = 'last_commit.txt'  // Stores last built commit hash
     }
 
     stages {
@@ -22,7 +21,6 @@ pipeline {
             }
         }
 
-
         stage('Build and Push Docker Images in Kubernetes Pod') {
             agent {
                 kubernetes {
@@ -33,6 +31,15 @@ pipeline {
                 container('docker') {
                     script {
                         def appDir = "solution_plus_project/application"
+                        def webImageExists = sh(
+                            script: "curl -s -o /dev/null -w '%{http_code}' https://hub.docker.com/v2/repositories/\$DOCKER_HUB_USERNAME/web-img/tags/latest/",
+                            returnStdout: true
+                        ).trim()
+
+                        def dbImageExists = sh(
+                            script: "curl -s -o /dev/null -w '%{http_code}' https://hub.docker.com/v2/repositories/\$DOCKER_HUB_USERNAME/db-img/tags/latest/",
+                            returnStdout: true
+                        ).trim()
 
                         sh """
                             set -e  # Exit on error
@@ -42,21 +49,29 @@ pipeline {
 
                             echo "Logging into Docker Hub..."
                             echo "\$DOCKER_CREDENTIALS_PSW" | docker login -u "\$DOCKER_CREDENTIALS_USR" --password-stdin
-
-                            echo "Building first Docker image: Web App"
-                            docker build -t \$DOCKER_HUB_USERNAME/web-img:latest -f Dockerfile .
-
-                            echo "Building second Docker image: MySQL"
-                            docker build -t \$DOCKER_HUB_USERNAME/db-img:latest -f Docker-mysql .
-
-                            echo "Pushing images to Docker Hub..."
-                            docker push \$DOCKER_HUB_USERNAME/web-img:latest
-                            docker push \$DOCKER_HUB_USERNAME/db-img:latest
-
-                            echo "Docker images pushed successfully!"
-
-                            docker logout
                         """
+
+                        if (webImageExists != '200') {
+                            echo "Web image does not exist, building..."
+                            sh """
+                                docker build -t \$DOCKER_HUB_USERNAME/web-img:latest -f Dockerfile .
+                                docker push \$DOCKER_HUB_USERNAME/web-img:latest
+                            """
+                        } else {
+                            echo "Web image already exists on Docker Hub. Skipping build."
+                        }
+
+                        if (dbImageExists != '200') {
+                            echo "DB image does not exist, building..."
+                            sh """
+                                docker build -t \$DOCKER_HUB_USERNAME/db-img:latest -f Docker-mysql .
+                                docker push \$DOCKER_HUB_USERNAME/db-img:latest
+                            """
+                        } else {
+                            echo "DB image already exists on Docker Hub. Skipping build."
+                        }
+
+                        sh "docker logout"
                     }
                 }
             }
@@ -84,14 +99,6 @@ pipeline {
             }
         }
 
-        stage('Save Last Commit') {
-            steps {
-                script {
-                    def latestCommit = sh(script: "cd solution_plus_project && git rev-parse HEAD", returnStdout: true).trim()
-                    writeFile file: LAST_COMMIT_FILE, text: latestCommit
-                }
-            }
-        }
 
         stage('Archive Trivy Reports') {
             steps {
