@@ -22,22 +22,6 @@ pipeline {
             }
         }
 
-        stage('Check for Changes') {
-            steps {
-                script {
-                    def latestCommit = sh(script: "cd solution_plus_project && git rev-parse HEAD", returnStdout: true).trim()
-                    def lastCommit = sh(script: "[ -f ${LAST_COMMIT_FILE} ] && cat ${LAST_COMMIT_FILE} || echo 'none'", returnStdout: true).trim()
-
-                    if (latestCommit == lastCommit) {
-                        echo "No changes detected in the source code. Skipping build..."
-                        currentBuild.result = 'SUCCESS'
-                        exit 0
-                    } else {
-                        echo "Source code changed. Proceeding with the build..."
-                    }
-                }
-            }
-        }
 
         stage('Build and Push Docker Images in Kubernetes Pod') {
             agent {
