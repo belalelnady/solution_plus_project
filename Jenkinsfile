@@ -1,5 +1,5 @@
 pipeline {
-    agent worker  // Runs the pipeline on Jenkins VM
+    agent { label 'worker' }  // Runs the pipeline on Jenkins VM
 
     environment {
         GITHUB_TOKEN = credentials('github-token') // GitHub token stored in Jenkins credentials
@@ -79,7 +79,7 @@ pipeline {
         }
 
         stage('Scan Images with Trivy and Generate Report') {
-            agent worker  // Runs on Jenkins VM, where Trivy is installed
+            agent { label 'worker' }  // Runs on Jenkins VM, where Trivy is installed
             steps {
                 script {
                     sh """
