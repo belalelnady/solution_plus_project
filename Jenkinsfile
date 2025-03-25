@@ -52,59 +52,45 @@ pipeline {
             }
             agent {
                 kubernetes {
-                    yamlFile 'kaniko-pod.yaml' // Use Kaniko YAML file
+                    yamlFile 'dynamic-docker-build.yaml' // Uses external YAML pod definition
                 }
             }
             steps {
-                parallel(
-                    webImage: {
-                        container('kaniko-web') {
-                            script {
-                                def appDir = "application"
+                container('docker') {
+                    script {
+                        def appDir = "application"
 
-                                sh """
-                                    set -e  # Exit on error
+                        sh """
+                            set -e  # Exit on error
 
-                                    echo "Cloning source code inside the Pod..."
-                                    rm -rf solution_plus_project  # Clean old files if exist
-                                    git clone https://\$GITHUB_TOKEN@github.com/belalelnady/solution_plus_project.git
-                                    cd solution_plus_project
-                                    git checkout salma
+                            echo "Cloning source code inside the Pod..."
+                            rm -rf solution_plus_project  # Clean old files if exist
+                            git clone https://\$GITHUB_TOKEN@github.com/belalelnady/solution_plus_project.git
+                            cd solution_plus_project
+                            git checkout salma
 
-                                    echo "Moving into application directory..."
-                                    cd ${appDir}
+                            echo "Moving into application directory..."
+                            cd ${appDir}
 
-                                    echo 'Building and pushing web-img...
-                                    """
-                                }
-                        }
-                    },
-                    dbImage: {
-                        container('kaniko-db') {
-                            script {
-                                def appDir = "application"
+                            echo "Logging into Docker Hub..."
+                            echo "\$DOCKER_CREDENTIALS_PSW" | docker login -u "\$DOCKER_CREDENTIALS_USR" --password-stdin
 
-                                sh """
-                                    set -e  # Exit on error
+                            echo "Building first Docker image: Web App"
+                            docker build -t \$IMAGE_REPO/web-img:latest -f Dockerfile .
+                            docker push \$IMAGE_REPO/web-img:latest
 
-                                    echo "Cloning source code inside the Pod..."
-                                    rm -rf solution_plus_project  # Clean old files if exist
-                                    git clone https://\$GITHUB_TOKEN@github.com/belalelnady/solution_plus_project.git
-                                    cd solution_plus_project
-                                    git checkout salma
+                            echo "Building second Docker image: MySQL"
+                            docker build -t \$IMAGE_REPO/db-img:latest -f Docker-mysql .
+                            docker push \$IMAGE_REPO/db-img:latest
 
-                                    echo "Moving into application directory..."
-                                    cd ${appDir}
-                                    echo 'Building and pushing db-img...'
-                                    """
-                                }
+                            echo "Docker images pushed successfully!"
 
-                        }
+                            docker logout
+                        """
                     }
-                )
+                }
             }
         }
-
 
         stage('Scan Images with Trivy and Generate Report') {
             agent { label 'worker' }  // Runs on Jenkins VM, where Trivy is installed
