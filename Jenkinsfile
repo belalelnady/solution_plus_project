@@ -42,14 +42,7 @@ pipeline {
         stage('Build and Push Docker Images in Kubernetes Pod') {
             agent {
                 kubernetes {
-                    def appDir = "solution_plus_project/application"
-                    sh """
-                            set -e  # Exit on error
-
-                            echo "Moving into application directory..."
-                            cd ${appDir}
-                    """
-                    yamlFile 'dynamic-docker-build.yaml' // Uses external YAML pod definition
+                    yamlFile 'solution_plus_project/application/dynamic-docker-build.yaml' // Uses external YAML pod definition
                 }
             }
             steps {
