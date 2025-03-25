@@ -26,7 +26,7 @@ pipeline {
         stage('Build and Push Docker Images in Kubernetes Pod') {
             agent {
                 kubernetes {
-                    yamlFile 'solution_plus_project/application/dynamic-docker-build.yaml' // Uses external YAML pod definition
+                    yamlFile 'dynamic-docker-build.yaml' // Uses external YAML pod definition
                 }
             }
             steps {
