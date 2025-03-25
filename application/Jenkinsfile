@@ -2,7 +2,7 @@ pipeline {
     agent worker  // Runs the pipeline on Jenkins VM
 
     environment {
-        GITHUB_TOKEN = credentials('github-tocken') // GitHub token
+        GITHUB_TOKEN = credentials('github-token') // GitHub token stored in Jenkins credentials
         DOCKER_CREDENTIALS = credentials('dockerhub-tocken') // Docker Hub token
         DOCKER_HUB_USERNAME = 'salmahesham1114'  // Your Docker Hub username
         LAST_COMMIT_FILE = 'last_commit.txt'  // Stores last built commit hash
@@ -11,16 +11,21 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'salma',  
-                    url: 'https://github.com/belalelnady/solution_plus_project.git',
-                    credentialsId: 'github-tocken'
+                script {
+                    sh """
+                        rm -rf solution_plus_project  # Ensure a clean workspace
+                        git clone https://\$GITHUB_TOKEN@github.com/belalelnady/solution_plus_project.git
+                        cd solution_plus_project
+                        git checkout salma
+                    """
+                }
             }
         }
 
         stage('Check for Changes') {
             steps {
                 script {
-                    def latestCommit = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
+                    def latestCommit = sh(script: "cd solution_plus_project && git rev-parse HEAD", returnStdout: true).trim()
                     def lastCommit = sh(script: "[ -f ${LAST_COMMIT_FILE} ] && cat ${LAST_COMMIT_FILE} || echo 'none'", returnStdout: true).trim()
 
                     if (latestCommit == lastCommit) {
@@ -58,7 +63,7 @@ pipeline {
                             docker build -t \$DOCKER_HUB_USERNAME/web-img:latest -f Dockerfile .
 
                             echo "Building second Docker image: MySQL"
-                            docker build -t \$DOCKER_HUB_USERNAME/db-img:latest -f Dockerfile-mysql .
+                            docker build -t \$DOCKER_HUB_USERNAME/db-img:latest -f Docker-mysql .
 
                             echo "Pushing images to Docker Hub..."
                             docker push \$DOCKER_HUB_USERNAME/web-img:latest
@@ -98,7 +103,7 @@ pipeline {
         stage('Save Last Commit') {
             steps {
                 script {
-                    def latestCommit = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
+                    def latestCommit = sh(script: "cd solution_plus_project && git rev-parse HEAD", returnStdout: true).trim()
                     writeFile file: LAST_COMMIT_FILE, text: latestCommit
                 }
             }
