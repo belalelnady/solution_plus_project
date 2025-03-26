@@ -15,7 +15,6 @@ spec:
       containers:
       - name: my-app
         image: web-img
-        imagePullPolicy: Never    ## delete when pulling from docker hub
         ports:
         - containerPort: 3000
         envFrom:

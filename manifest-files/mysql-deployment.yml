@@ -15,7 +15,6 @@ spec:
       containers:
       - name: mysql-db
         image: db-img
-        imagePullPolicy: Never    ## delete when pulling from docker hub
         envFrom:
         - configMapRef:
             name: app-config
