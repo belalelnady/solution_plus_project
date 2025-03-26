@@ -63,11 +63,11 @@ pipeline {
 
                         echo "Building first Docker image: Web App"
                         docker build -t \$IMAGE_REPO:web-img-latest -f Dockerfile .
-                        docker push \$IMAGE_REPO/web-img:latest
+                        docker push \$IMAGE_REPO:web-img-latest
 
                         echo "Building second Docker image: MySQL"
                         docker build -t \$IMAGE_REPO:db-img-latest -f Docker-mysql .
-                        docker push \$IMAGE_REPO/db-img:latest
+                        docker push \$IMAGE_REPO:db-img-latest
 
                         echo "Docker images pushed successfully!"
 
