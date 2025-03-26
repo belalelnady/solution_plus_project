@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         GITHUB_TOKEN = credentials('github-token') // GitHub token stored in Jenkins credentials
-        DOCKER_CREDENTIALS = credentials('dockerhub-tocken') // Docker Hub token
+        DOCKER_CREDENTIALS = credentials('dockerhub-token') // Docker Hub token
         DOCKER_HUB_USERNAME = 'salmahesham1114'  // Your Docker Hub username
         IMAGE_REPO = 'salmahesham1114/solution_plus_project' // Docker Hub repo
     }
