@@ -117,8 +117,28 @@ pipeline {
             steps {
                 script {
                     sh """
+                        pwd
+                        cd manifest-files
+                        echo "Deleting existing Kubernetes resources..."
+                        # Ignore errors if resources do not exist
+                        kubectl delete deployment mysql-deployment --ignore-not-found=true
+                        kubectl delete deployment app-deployment --ignore-not-found=true
+                        kubectl delete service mysql-service --ignore-not-found=true
+                        kubectl delete service app-service --ignore-not-found=true
+                        kubectl delete pvc mysql-pvc --ignore-not-found=true
+                        kubectl delete configmap app-config --ignore-not-found=true
+                        kubectl delete configmap mysql-config --ignore-not-found=true
+                        kubectl delete secret app-secrets --ignore-not-found=true
+
                         echo "Deploying application using Kubernetes manifests..."
-                        kubectl apply -f manifest-files/
+                        kubectl apply -f secrets.yml
+                        kubectl apply -f configmap.yml
+                        kubectl apply -f configmap-mysql.yml
+                        kubectl apply -f pvc.yml
+                        kubectl apply -f mysql-deployment.yml
+                        kubectl apply -f app-deployment.yml
+                        kubectl apply -f mysql-service.yml
+                        kubectl apply -f app-service.yml
                         echo "Deployment completed!"
                     """
                 }
