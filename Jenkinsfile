@@ -10,6 +10,12 @@ pipeline {
 
     stages {
 
+        stage('Clean old files if exist'){
+            sh """
+            rm -rf solution_plus_project  # Clean old files if exist
+            """
+        }
+
         stage('Check Docker Images in Repo') {
             steps {
                 script {
@@ -87,11 +93,6 @@ pipeline {
                         set -e
                         mkdir -p trivy_reports
 
-                        echo "Scanning web-img from Docker Hub..."
-                        trivy image \$DOCKER_HUB_USERNAME:web-img-latest > trivy_reports/web-img-report.txt || true
-
-                        echo "Scanning db-img from Docker Hub..."
-                        trivy image \$DOCKER_HUB_USERNAME:db-img-latest > trivy_reports/db-img-report.txt || true
                         echo "Scanning Web App Image..."
                         trivy image --exit-code 1 --no-progress ${IMAGE_REPO}:web-img-latest | tee trivy_reports/web-img-report.txt
 
