@@ -112,7 +112,6 @@ pipeline {
             }
         }
     }
-}
     post {
         always {
             archiveArtifacts artifacts: 'trivy_reports/*.txt', fingerprint: true
