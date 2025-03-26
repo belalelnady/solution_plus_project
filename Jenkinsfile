@@ -52,7 +52,7 @@ pipeline {
             }
             agent {
                 kubernetes {
-                    yamlFile 'solution_plus_project/application/dynamic-docker-build.yaml' // Uses external YAML pod definition
+                    yamlFile 'dynamic-docker-build.yaml' // Uses external YAML pod definition
                 }
             }
             steps {
