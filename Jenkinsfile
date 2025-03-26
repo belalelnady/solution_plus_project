@@ -88,19 +88,16 @@ pipeline {
                         set -e
                         mkdir -p trivy_reports
 
-<<<<<<< HEAD
                         echo "Scanning web-img from Docker Hub..."
                         trivy image \$DOCKER_HUB_USERNAME:web-img-latest > trivy_reports/web-img-report.txt || true
 
                         echo "Scanning db-img from Docker Hub..."
                         trivy image \$DOCKER_HUB_USERNAME:db-img-latest > trivy_reports/db-img-report.txt || true
-=======
                         echo "Scanning Web App Image..."
                         trivy image --exit-code 1 --no-progress ${IMAGE_REPO}:web-img-latest | tee trivy_reports/web-img-report.txt
 
                         echo "Scanning MySQL Image..."
                         trivy image --exit-code 1 --no-progress ${IMAGE_REPO}:db-img-latest | tee trivy_reports/db-img-report.txt
->>>>>>> 5481f73 (solved trivy error)
 
                         echo "Security scan completed! Reports saved in trivy_reports/"
                     """
@@ -115,10 +112,7 @@ pipeline {
             }
         }
     }
-<<<<<<< HEAD
 }
-=======
-
     post {
         always {
             archiveArtifacts artifacts: 'trivy_reports/*.txt', fingerprint: true
@@ -128,4 +122,3 @@ pipeline {
         }
     }
 }
->>>>>>> 5481f73 (solved trivy error)
