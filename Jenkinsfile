@@ -7,6 +7,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
               sh 'echo "batman"'
+              sh 'pwd'
             }
         }
 
