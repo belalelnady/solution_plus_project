@@ -52,12 +52,12 @@ pipeline {
             }
             steps {
                 script {
-                    def appDir = "application"
+                    def appDir = "solution_plus_project/application"
 
                     sh """
                         set -e  # Exit on error
 
-
+                        cd ${appDir}
                         echo "Logging into Docker Hub..."
                         echo "\$DOCKER_CREDENTIALS_PSW" | docker login -u "\$DOCKER_CREDENTIALS_USR" --password-stdin
 
