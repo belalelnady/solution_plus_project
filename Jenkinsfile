@@ -81,7 +81,6 @@ pipeline {
         }
 
         stage('Scan Images with Trivy and Generate Report') {
-            agent { label 'worker' }  // Runs on Jenkins VM, where Trivy is installed
             steps {
                 script {
                     sh """
@@ -110,14 +109,6 @@ pipeline {
                 archiveArtifacts artifacts: 'trivy_reports/*.txt', fingerprint: true
                 echo "Trivy reports archived for review."
             }
-        }
-    }
-    post {
-        always {
-            archiveArtifacts artifacts: 'trivy_reports/*.txt', fingerprint: true
-        }
-        failure {
-            echo "Pipeline failed. Check Trivy reports for security issues."
         }
     }
 }
