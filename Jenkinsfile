@@ -91,10 +91,10 @@ pipeline {
                         mkdir -p trivy_reports
 
                         echo "Scanning web-img from Docker Hub..."
-                        trivy image \$DOCKER_HUB_USERNAME/web-img:latest > trivy_reports/web-img-report.txt || true
+                        trivy image \$DOCKER_HUB_USERNAME:web-img-latest > trivy_reports/web-img-report.txt || true
 
                         echo "Scanning db-img from Docker Hub..."
-                        trivy image \$DOCKER_HUB_USERNAME/db-img:latest > trivy_reports/db-img-report.txt || true
+                        trivy image \$DOCKER_HUB_USERNAME:db-img-latest > trivy_reports/db-img-report.txt || true
 
                         echo "Security scan completed! Reports saved in trivy_reports/"
                     """
