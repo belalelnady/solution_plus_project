@@ -112,5 +112,17 @@ pipeline {
                 echo "Trivy reports archived for review."
             }
         }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    sh """
+                        echo "Deploying application using Kubernetes manifests..."
+                        kubectl apply -f k8s-manifests/
+                        echo "Deployment completed!"
+                    """
+                }
+            }
+        }
     }
 }
