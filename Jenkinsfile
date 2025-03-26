@@ -118,7 +118,7 @@ pipeline {
                 script {
                     sh """
                         echo "Deploying application using Kubernetes manifests..."
-                        kubectl apply -f k8s-manifests/
+                        kubectl apply -f manifests-files/
                         echo "Deployment completed!"
                     """
                 }
