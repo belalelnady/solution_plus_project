@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: mysql-db
-        image: db-img
+        image: salmahesham1114/solution_plus_project:db-img-latest
         envFrom:
         - configMapRef:
             name: app-config

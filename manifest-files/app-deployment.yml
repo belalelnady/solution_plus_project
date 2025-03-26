@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: my-app
-        image: web-img
+        image: salmahesham1114/solution_plus_project:web-img-latest
         ports:
         - containerPort: 3000
         envFrom:
