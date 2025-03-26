@@ -16,11 +16,15 @@ spec:
         - name: dind-storage
           mountPath: /var/lib/docker
         - name: docker-config
-          mountPath: /root/.docker  # Mount Docker credentials for Docker CLI
+          mountPath: /root/.docker
+          subPath: config.json  # Ensures only config.json is mounted as a file, not read-only
 
   volumes:
     - name: dind-storage
       emptyDir: {}
     - name: docker-config
       secret:
-        secretName: docker-config  # Ensure this secret exists in your cluster
+        secretName: docker-config
+        items:
+          - key: .dockerconfigjson
+            path: config.json
