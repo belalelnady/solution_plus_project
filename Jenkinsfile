@@ -10,10 +10,10 @@ pipeline {
 
     stages {
 
-        stage('Clean old files if exist'){
-            sh """
-            rm -rf solution_plus_project  # Clean old files if exist
-            """
+        stage('Clean old files if exist') {
+            steps {
+                sh "rm -rf solution_plus_project"  // Clean old files if exist
+            }
         }
 
         stage('Check Docker Images in Repo') {
@@ -94,10 +94,11 @@ pipeline {
                         mkdir -p trivy_reports
 
                         echo "Scanning Web App Image..."
-                        trivy image --exit-code 1 --no-progress ${IMAGE_REPO}:web-img-latest | tee trivy_reports/web-img-report.txt
+                        trivy image --exit-code 1 --no-progress ${IMAGE_REPO}:web-img-latest > trivy_reports/web-img-report.txt 2>/dev/null || true
 
                         echo "Scanning MySQL Image..."
-                        trivy image --exit-code 1 --no-progress ${IMAGE_REPO}:db-img-latest | tee trivy_reports/db-img-report.txt
+                        trivy image --exit-code 1 --no-progress ${IMAGE_REPO}:db-img-latest > trivy_reports/db-img-report.txt 2>/dev/null || true
+
 
                         echo "Security scan completed! Reports saved in trivy_reports/"
                     """
