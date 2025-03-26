@@ -16,7 +16,7 @@ spec:
         - name: dind-storage
           mountPath: /var/lib/docker
         - name: docker-config
-          mountPath: /root/.docker
+          mountPath: root/.docker
           subPath: config.json  # Ensures only config.json is mounted as a file, not read-only
 
   volumes:
