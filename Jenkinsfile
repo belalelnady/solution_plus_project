@@ -26,12 +26,12 @@ pipeline {
             steps {
                 script {
                     def webImageExists = sh(
-                        script: "curl -s -o /dev/null -w '%{http_code}' https://hub.docker.com/v2/repositories/\$IMAGE_REPO/web-img/tags/latest/",
+                        script: "curl -s -o /dev/null -w '%{http_code}' https://hub.docker.com/v2/repositories/\$IMAGE_REPO/tags/web-img-latest/",
                         returnStdout: true
                     ).trim()
 
                     def dbImageExists = sh(
-                        script: "curl -s -o /dev/null -w '%{http_code}' https://hub.docker.com/v2/repositories/\$IMAGE_REPO/db-img/tags/latest/",
+                        script: "curl -s -o /dev/null -w '%{http_code}' https://hub.docker.com/v2/repositories/\$IMAGE_REPO/tags/db-img-latest/",
                         returnStdout: true
                     ).trim()
 
@@ -62,11 +62,11 @@ pipeline {
                         echo "\$DOCKER_CREDENTIALS_PSW" | docker login -u "\$DOCKER_CREDENTIALS_USR" --password-stdin
 
                         echo "Building first Docker image: Web App"
-                        docker build -t \$IMAGE_REPO/web-img:latest -f Dockerfile .
+                        docker build -t \$IMAGE_REPO:web-img-latest -f Dockerfile .
                         docker push \$IMAGE_REPO/web-img:latest
 
                         echo "Building second Docker image: MySQL"
-                        docker build -t \$IMAGE_REPO/db-img:latest -f Docker-mysql .
+                        docker build -t \$IMAGE_REPO:db-img-latest -f Docker-mysql .
                         docker push \$IMAGE_REPO/db-img:latest
 
                         echo "Docker images pushed successfully!"
