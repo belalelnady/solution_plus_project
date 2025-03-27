@@ -119,7 +119,6 @@ pipeline {
                     sh """
                         pwd
                         cd manifest-files
-                        pwd
                         echo "Deleting existing Kubernetes resources..."
                         # Ignore errors if resources do not exist
                         kubectl delete deployment mysql-deployment --ignore-not-found=true
