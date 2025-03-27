@@ -126,6 +126,7 @@ pipeline {
                         kubectl delete deployment app-deployment --ignore-not-found=true
                         kubectl delete service mysql-service --ignore-not-found=true
                         kubectl delete service app-service --ignore-not-found=true
+                        kubectl delete pv mysql-pv --ignore-not-found=true
                         kubectl delete pvc mysql-pvc --ignore-not-found=true
                         kubectl delete configmap app-config --ignore-not-found=true
                         kubectl delete configmap mysql-config --ignore-not-found=true
@@ -135,6 +136,7 @@ pipeline {
                         kubectl apply -f secrets.yml
                         kubectl apply -f configmap.yml
                         kubectl apply -f configmap-mysql-init.yml
+                        kubectl apply -f pv.yml
                         kubectl apply -f pvc.yml
                         kubectl apply -f mysql-deployment.yml
                         kubectl apply -f app-deployment.yml
