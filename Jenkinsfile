@@ -129,7 +129,7 @@ pipeline {
                         kubectl delete pv mysql-pv --ignore-not-found=true
                         kubectl delete pvc mysql-pvc --ignore-not-found=true
                         kubectl delete configmap app-config --ignore-not-found=true
-                        kubectl delete configmap mysql-config --ignore-not-found=true
+                        kubectl delete configmap mysql-init-script --ignore-not-found=true
                         kubectl delete secret app-secrets --ignore-not-found=true
 
                         echo "Deploying application using Kubernetes manifests..."
