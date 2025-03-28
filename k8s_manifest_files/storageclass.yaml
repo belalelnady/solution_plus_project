@@ -4,6 +4,6 @@ metadata:
   name: standard
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
-provisioner: k8s.io/minikube-hostpath
+provisioner: rancher.io/local-path
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
