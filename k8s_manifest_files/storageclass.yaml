@@ -5,5 +5,7 @@ metadata:
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
 provisioner: rancher.io/local-path
+parameters:
+  nodeAffinity: "kubernetes.io/hostname=team-01-ubuntu-s-4vcpu-8gb-fra1"
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
