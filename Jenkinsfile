@@ -22,6 +22,29 @@ pipeline {
             }
         }
 
+        stage('Check Node.js and npm Installation') {
+            steps {
+                script {
+                    echo "Checking Node.js and npm versions..."
+                    sh '''
+                        if ! command -v node &> /dev/null; then
+                            echo "Node.js is not installed!" >> test_results.txt
+                            exit 1
+                        else
+                            echo "Node.js version: $(node -v)" >> test_results.txt
+                        fi
+
+                        if ! command -v npm &> /dev/null; then
+                            echo "npm is not installed!" >> test_results.txt
+                            exit 1
+                        else
+                            echo "npm version: $(npm -v)" >> test_results.txt
+                        fi
+                    '''
+                }
+            }
+        }
+
         stage('Run Unit Tests and Capture Warnings') {
             steps {
                 script {
@@ -32,10 +55,13 @@ pipeline {
 
                         # Run npm test and capture any warnings/errors
                         echo "Running npm test..."
-                        npm test > test_results.txt 2>&1 || { echo "npm test failed"; exit 1; }
+                        npm test > test_results.txt 2>&1 || { 
+                            echo "npm test failed" >> test_results.txt
+                            exit 1
+                        }
 
                         # Append any Node.js related warnings/errors
-                        echo "Capturing Node.js version and npm warnings..."
+                        echo "Capturing Node.js version and npm warnings..." >> test_results.txt
                         node -v >> test_results.txt || echo "Node.js not installed or incompatible version" >> test_results.txt
                         npm -v >> test_results.txt || echo "npm not installed" >> test_results.txt
                     '''
@@ -144,10 +170,10 @@ pipeline {
                 script {
                     echo "Verifying Kubernetes resource limits for CPU and memory..."
                     sh 'kubectl get deployment/my-app -o=jsonpath="{.spec.template.spec.containers[0].resources}"'
-
+        
                     echo "Verifying the health of Kubernetes pods..."
                     sh 'kubectl get pods --namespace="default"'
-
+        
                     echo "Checking logs for recent errors..."
                     sh 'kubectl logs -l app=my-app --tail=50'
                 }
@@ -178,12 +204,12 @@ pipeline {
                 script {
                     // Fetch the external IP of the ingress
                     def ingressIP = sh(script: 'kubectl get ingress my-app-ingress -o=jsonpath="{.status.loadBalancer.ingress[0].ip}"', returnStdout: true).trim()
-
+                    
                     // In case DNS is used instead of IP
                     if (ingressIP == "") {
                         ingressIP = sh(script: 'kubectl get ingress my-app-ingress -o=jsonpath="{.spec.rules[0].host}"', returnStdout: true).trim()
                     }
-
+                    
                     // Store the URL for later use
                     env.WEB_APP_URL = "http://$ingressIP"
                     echo "Website URL: $WEB_APP_URL"
