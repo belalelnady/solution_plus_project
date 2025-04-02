@@ -22,20 +22,33 @@ pipeline {
             }
         }
 
-                stage('Run Unit Tests') {
-                    steps {
-                        script {
-                            echo "Running unit tests..."
-                            sh '''
-                                set -e
-                                cd application
-                                npm install
-                                npm test  # or `npx jest` if using Jest
-                            '''
-                        }
-                    }
-                }
+        stage('Run Unit Tests and Capture Warnings') {
+            steps {
+                script {
+                    echo "Running unit tests and capturing warnings..."
+                    sh '''
+                        set -e
+                        cd application
 
+                        # Run npm test and capture any warnings/errors
+                        echo "Running npm test..."
+                        npm test > test_results.txt 2>&1 || { echo "npm test failed"; exit 1; }
+
+                        # Append any Node.js related warnings/errors
+                        echo "Capturing Node.js version and npm warnings..."
+                        node -v >> test_results.txt || echo "Node.js not installed or incompatible version" >> test_results.txt
+                        npm -v >> test_results.txt || echo "npm not installed" >> test_results.txt
+                    '''
+                }
+            }
+        }
+
+        stage('Store Unit Test and Node.js Results') {
+            steps {
+                archiveArtifacts artifacts: 'application/test_results.txt', fingerprint: true
+                sh 'cat application/test_results.txt'  // Print the content for visibility
+            }
+        }
 
         stage('Validate Docker Image') {
             steps {
@@ -126,21 +139,20 @@ pipeline {
             }
         }
 
-            stage('Verify Kubernetes Resources Health') {
-                steps {
-                    script {
-                        echo "Verifying Kubernetes resource limits for CPU and memory..."
-                        sh 'kubectl get deployment/my-app -o=jsonpath="{.spec.template.spec.containers[0].resources}"'
-            
-                        echo "Verifying the health of Kubernetes pods..."
-                        sh 'kubectl get pods --namespace="default"'
-            
-                        echo "Checking logs for recent errors..."
-                        sh 'kubectl logs -l app=my-app --tail=50'
-                    }
+        stage('Verify Kubernetes Resources Health') {
+            steps {
+                script {
+                    echo "Verifying Kubernetes resource limits for CPU and memory..."
+                    sh 'kubectl get deployment/my-app -o=jsonpath="{.spec.template.spec.containers[0].resources}"'
+
+                    echo "Verifying the health of Kubernetes pods..."
+                    sh 'kubectl get pods --namespace="default"'
+
+                    echo "Checking logs for recent errors..."
+                    sh 'kubectl logs -l app=my-app --tail=50'
                 }
             }
-
+        }
 
         stage('Check Disk Space') {
             steps {
@@ -166,12 +178,12 @@ pipeline {
                 script {
                     // Fetch the external IP of the ingress
                     def ingressIP = sh(script: 'kubectl get ingress my-app-ingress -o=jsonpath="{.status.loadBalancer.ingress[0].ip}"', returnStdout: true).trim()
-                    
+
                     // In case DNS is used instead of IP
                     if (ingressIP == "") {
                         ingressIP = sh(script: 'kubectl get ingress my-app-ingress -o=jsonpath="{.spec.rules[0].host}"', returnStdout: true).trim()
                     }
-                    
+
                     // Store the URL for later use
                     env.WEB_APP_URL = "http://$ingressIP"
                     echo "Website URL: $WEB_APP_URL"
