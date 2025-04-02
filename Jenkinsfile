@@ -26,7 +26,6 @@ pipeline {
             steps {
                 script {
                     echo "Validating Docker image..."
-                    // Example check: Ensure there are no empty layers
                     sh 'docker history $IMAGE_TAG | grep -q "empty layer" && exit 1 || echo "Valid image"'
                 }
             }
@@ -44,8 +43,8 @@ pipeline {
                             docker logout || true
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-                            echo "Building and pushing Docker image..."
-                            docker build -t $IMAGE_TAG -f application/Dockerfile application
+                            echo "Building and pushing Docker image with cache..."
+                            docker build --cache-from $DOCKER_REPO:cache --tag $IMAGE_TAG -f application/Dockerfile application
                             docker push $IMAGE_TAG
 
                             echo "Logging out from Docker Hub..."
@@ -76,27 +75,38 @@ pipeline {
             }
         }
 
-
         stage('Apply Kubernetes Manifests') {
             steps {
                 script {
-                    sh '''
-                        set -e
+                    def maxRetries = 3
+                    def attempt = 0
+                    while (attempt < maxRetries) {
+                        try {
+                            sh '''
+                                set -e
+                                echo "Applying Kubernetes manifests..."
+                                kubectl apply -f k8s/
 
-                        echo "Applying Kubernetes manifests..."
-                        kubectl apply -f k8s/
+                                echo "Verifying deployment rollouts..."
+                                for i in {1..5}; do
+                                    kubectl rollout status deployment/my-app --timeout=60s && break || sleep 10
+                                done
 
-                        echo "Verifying deployment rollouts..."
-                        for i in {1..5}; do
-                            kubectl rollout status deployment/my-app --timeout=60s && break || sleep 10
-                        done
+                                for i in {1..5}; do
+                                    kubectl rollout status deployment/mysql-db --timeout=60s && break || sleep 10
+                                done
 
-                        for i in {1..5}; do
-                            kubectl rollout status deployment/mysql-db --timeout=60s && break || sleep 10
-                        done
-
-                        echo "Kubernetes deployment successful!"
-                    '''
+                                echo "Kubernetes deployment successful!"
+                            '''
+                            break
+                        } catch (Exception e) {
+                            if (++attempt == maxRetries) {
+                                throw e
+                            }
+                            echo "Retrying apply after failure ($attempt/$maxRetries)..."
+                            sleep 10
+                        }
+                    }
                 }
             }
         }
@@ -105,8 +115,22 @@ pipeline {
             steps {
                 script {
                     echo "Verifying Kubernetes resource limits for CPU and memory..."
-                    // Example check: Ensure limits are set for deployments
                     sh 'kubectl get deployment/my-app -o=jsonpath="{.spec.template.spec.containers[0].resources}"'
+                }
+            }
+        }
+
+        stage('Verify Kubernetes Resources Health') {
+            steps {
+                script {
+                    sh '''
+                        set -e
+                        echo "Verifying the health of Kubernetes pods..."
+                        kubectl get pods --namespace=default
+
+                        echo "Checking logs for recent errors..."
+                        kubectl logs -l app=my-app --tail=50
+                    '''
                 }
             }
         }
@@ -127,11 +151,15 @@ pipeline {
         }
 
         success {
+            slackSend (channel: '#devops', message: "Jenkins Pipeline SUCCESS: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}")
             echo "Build and Kubernetes deployment for SolutionPlus Web App was successful!"
         }
 
         failure {
+            slackSend (channel: '#devops', message: "Jenkins Pipeline FAILURE: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}")
             echo "Build or deployment failed. Please check the logs for errors."
+            sh 'kubectl rollout undo deployment/my-app'
+            sh 'kubectl rollout undo deployment/mysql-db'
         }
     }
 }
