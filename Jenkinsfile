@@ -9,11 +9,6 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git credentialsId: 'jenkins-agent', url: "${GIT_REPO}", branch: "${GIT_BRANCH}"
-            }
-        }
 
         stage('Code Analysis') {
             steps {
