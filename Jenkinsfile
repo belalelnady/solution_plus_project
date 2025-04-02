@@ -22,44 +22,46 @@ pipeline {
             }
         }
 
-     stage('Run Unit Tests') {
-        steps {
-            script {
-                echo "Running npm test..."
-                
-                // Check if Node.js is installed
-                if command -v node &> /dev/null; then
-                    echo "Node.js version: $(node -v)" >> test_results.txt
-                else
-                    echo "Node.js is not installed!" >> test_results.txt
-                    exit 1
-                fi
-    
-                // Check if npm is installed
-                if command -v npm &> /dev/null; then
-                    echo "npm version: $(npm -v)" >> test_results.txt
-                else
-                    echo "npm is not installed!" >> test_results.txt
-                    exit 1
-                fi
-    
-                // Run npm test and capture output and errors
-                sh '''
-                    set -e
-                    cd application
-                    npm test > test_results.txt 2>&1 || {
-                        echo "npm test failed" >> test_results.txt
-                        exit 1
+        stage('Run Unit Tests') {
+            steps {
+                script {
+                    echo "Running npm test..."
+                    
+                    // Check if Node.js is installed
+                    if (sh(script: 'command -v node', returnStatus: true) != 0) {
+                        echo "Node.js is not installed!" >> test_results.txt
+                        currentBuild.result = 'FAILURE'
+                        return
+                    } else {
+                        echo "Node.js version: $(node -v)" >> test_results.txt
                     }
-                '''
+
+                    // Check if npm is installed
+                    if (sh(script: 'command -v npm', returnStatus: true) != 0) {
+                        echo "npm is not installed!" >> test_results.txt
+                        currentBuild.result = 'FAILURE'
+                        return
+                    } else {
+                        echo "npm version: $(npm -v)" >> test_results.txt
+                    }
+
+                    // Run npm test and capture output and errors
+                    sh '''
+                        set -e
+                        cd application
+                        npm test > test_results.txt 2>&1 || {
+                            echo "npm test failed" >> test_results.txt
+                            exit 1
+                        }
+                    '''
+                }
             }
         }
-    }
 
         stage('Store Test Results') {
             steps {
                 archiveArtifacts artifacts: 'test_results.txt', fingerprint: true
-                sh 'cat test_results.txt'  # Print out the test results for debugging in Jenkins logs
+                sh 'cat test_results.txt'  // Print out the test results for debugging in Jenkins logs
             }
         }
 
@@ -231,3 +233,4 @@ pipeline {
         }
     }
 }
+
