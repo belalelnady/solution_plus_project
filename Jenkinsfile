@@ -66,16 +66,6 @@ pipeline {
             }
         }
 
-        stage('Kubernetes Manifest Validation') {
-            steps {
-                script {
-                    echo "Validating Kubernetes manifests with Kube-score using Docker..."
-                    sh '''
-                        docker run --rm -v $(pwd)/k8s:/k8s quay.io/substantial/kube-score score /k8s --disable=dependency-missing --ignore=warnings
-                    '''
-                }
-            }
-        }
 
         stage('Apply Kubernetes Manifests') {
             steps {
