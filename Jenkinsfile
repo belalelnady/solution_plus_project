@@ -28,21 +28,21 @@ pipeline {
                     echo "Running npm test..."
                     
                     // Check if Node.js is installed
-                    if (sh(script: 'command -v node', returnStatus: true) != 0) {
+                    if (sh(script: 'command -v node', returnStatus: true) == 0) {
+                        def nodeVersion = sh(script: 'node -v', returnStdout: true).trim()
+                        echo "Node.js version: ${nodeVersion}" >> test_results.txt
+                    } else {
                         echo "Node.js is not installed!" >> test_results.txt
-                        currentBuild.result = 'FAILURE'
-                        return
-                    } else {
-                        echo "Node.js version: $(node -v)" >> test_results.txt
+                        exit 1
                     }
-
+                    
                     // Check if npm is installed
-                    if (sh(script: 'command -v npm', returnStatus: true) != 0) {
-                        echo "npm is not installed!" >> test_results.txt
-                        currentBuild.result = 'FAILURE'
-                        return
+                    if (sh(script: 'command -v npm', returnStatus: true) == 0) {
+                        def npmVersion = sh(script: 'npm -v', returnStdout: true).trim()
+                        echo "npm version: ${npmVersion}" >> test_results.txt
                     } else {
-                        echo "npm version: $(npm -v)" >> test_results.txt
+                        echo "npm is not installed!" >> test_results.txt
+                        exit 1
                     }
 
                     // Run npm test and capture output and errors
