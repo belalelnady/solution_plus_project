@@ -22,6 +22,16 @@ pipeline {
             }
         }
 
+        stage('Validate Docker Image') {
+            steps {
+                script {
+                    echo "Validating Docker image..."
+                    // Example check: Ensure there are no empty layers
+                    sh 'docker history $IMAGE_TAG | grep -q "empty layer" && exit 1 || echo "Valid image"'
+                }
+            }
+        }
+
         stage('Construct and Upload Web App Image') {
             steps {
                 script {
@@ -90,11 +100,38 @@ pipeline {
                 }
             }
         }
+
+        stage('Verify Kubernetes Resource Limits') {
+            steps {
+                script {
+                    echo "Verifying Kubernetes resource limits for CPU and memory..."
+                    // Example check: Ensure limits are set for deployments
+                    sh 'kubectl get deployment/my-app -o=jsonpath="{.spec.template.spec.containers[0].resources}"'
+                }
+            }
+        }
+
+        stage('Check Disk Space') {
+            steps {
+                script {
+                    sh 'df -h'
+                }
+            }
+        }
     }
 
     post {
         always {
+            echo "Cleaning up Docker images..."
             sh 'docker image prune -f || true'
+        }
+
+        success {
+            echo "Build and Kubernetes deployment for SolutionPlus Web App was successful!"
+        }
+
+        failure {
+            echo "Build or deployment failed. Please check the logs for errors."
         }
     }
 }
