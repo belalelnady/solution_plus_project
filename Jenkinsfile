@@ -22,57 +22,44 @@ pipeline {
             }
         }
 
-        stage('Check Node.js and npm Installation') {
-            steps {
-                script {
-                    echo "Checking Node.js and npm versions..."
-                    sh '''
-                        if ! command -v node &> /dev/null; then
-                            echo "Node.js is not installed!" >> test_results.txt
-                            exit 1
-                        else
-                            echo "Node.js version: $(node -v)" >> test_results.txt
-                        fi
-
-                        if ! command -v npm &> /dev/null; then
-                            echo "npm is not installed!" >> test_results.txt
-                            exit 1
-                        else
-                            echo "npm version: $(npm -v)" >> test_results.txt
-                        fi
-                    '''
-                }
+     stage('Run Unit Tests') {
+        steps {
+            script {
+                echo "Running npm test..."
+                
+                // Check if Node.js is installed
+                if command -v node &> /dev/null; then
+                    echo "Node.js version: $(node -v)" >> test_results.txt
+                else
+                    echo "Node.js is not installed!" >> test_results.txt
+                    exit 1
+                fi
+    
+                // Check if npm is installed
+                if command -v npm &> /dev/null; then
+                    echo "npm version: $(npm -v)" >> test_results.txt
+                else
+                    echo "npm is not installed!" >> test_results.txt
+                    exit 1
+                fi
+    
+                // Run npm test and capture output and errors
+                sh '''
+                    set -e
+                    cd application
+                    npm test > test_results.txt 2>&1 || {
+                        echo "npm test failed" >> test_results.txt
+                        exit 1
+                    }
+                '''
             }
         }
+    }
 
-        stage('Run Unit Tests and Capture Warnings') {
+        stage('Store Test Results') {
             steps {
-                script {
-                    echo "Running unit tests and capturing warnings..."
-                    sh '''
-                        set -e
-                        cd application
-
-                        # Run npm test and capture any warnings/errors
-                        echo "Running npm test..."
-                        npm test > test_results.txt 2>&1 || { 
-                            echo "npm test failed" >> test_results.txt
-                            exit 1
-                        }
-
-                        # Append any Node.js related warnings/errors
-                        echo "Capturing Node.js version and npm warnings..." >> test_results.txt
-                        node -v >> test_results.txt || echo "Node.js not installed or incompatible version" >> test_results.txt
-                        npm -v >> test_results.txt || echo "npm not installed" >> test_results.txt
-                    '''
-                }
-            }
-        }
-
-        stage('Store Unit Test and Node.js Results') {
-            steps {
-                archiveArtifacts artifacts: 'application/test_results.txt', fingerprint: true
-                sh 'cat application/test_results.txt'  // Print the content for visibility
+                archiveArtifacts artifacts: 'test_results.txt', fingerprint: true
+                sh 'cat test_results.txt'  # Print out the test results for debugging in Jenkins logs
             }
         }
 
