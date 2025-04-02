@@ -90,7 +90,14 @@ pipeline {
             }
         }
 
-    
+        stage('Send Success Email') {
+            steps {
+                script {
+                    echo "Sending success email..."
+                    sh '''
+                        echo "Build and Kubernetes deployment for SolutionPlus Web App was successful!" | mail -s "Build Success: SolutionPlus" $EMAIL_RECIPIENT
+                    '''
+                }
             }
         }
     }
@@ -101,4 +108,3 @@ pipeline {
         }
     }
 }
-
