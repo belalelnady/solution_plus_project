@@ -3,13 +3,13 @@ Jenkins Pipeline for SolutionPlus Web Application Deployment
 Purpose: Automates build, security scan, and deployment of web app and MySQL to Kubernetes
 Author: DevOps Team
 */
-
 pipeline {
     agent { label 'jenkins-agent' }
 
     environment {
         DOCKER_REPO = 'mohamedamr99t/solutionplus-final'
         IMAGE_TAG = "${DOCKER_REPO}:web-img-latest"
+        EMAIL_RECIPIENT = 'mohamedamr99t@gmail.com'  // Email to notify
     }
 
     stages {
@@ -19,6 +19,31 @@ pipeline {
                     echo "Removing old workspace artifacts..."
                     rm -rf solution_plus_project || true
                 '''
+            }
+        }
+
+        stage('Remove Unchanged Kubernetes Resources') {
+            steps {
+                script {
+                    sh '''
+                        set -e
+                        echo "Removing unchanged Kubernetes resources..."
+                        
+                        # Delete unchanged resources in Kubernetes
+                        kubectl delete deployment.apps/my-app --ignore-not-found=true || true
+                        kubectl delete secret/my-app-secret --ignore-not-found=true || true
+                        kubectl delete service/my-app --ignore-not-found=true || true
+                        kubectl delete configmap/app-config --ignore-not-found=true || true
+                        kubectl delete configmap/mysql-config --ignore-not-found=true || true
+                        kubectl delete persistentvolumeclaim/mysql-data --ignore-not-found=true || true
+                        kubectl delete configmap/mysql-db-cm1 --ignore-not-found=true || true
+                        kubectl delete configmap/mysql-db-cm2 --ignore-not-found=true || true
+                        kubectl delete deployment.apps/mysql-db --ignore-not-found=true || true
+                        kubectl delete persistentvolume/mysql-pv --ignore-not-found=true || true
+                        kubectl delete secret/mysql-secret --ignore-not-found=true || true
+                        kubectl delete service/mysql-db --ignore-not-found=true || true
+                    '''
+                }
             }
         }
 
@@ -89,6 +114,17 @@ pipeline {
                 }
             }
         }
+
+        stage('Send Success Email') {
+            steps {
+                script {
+                    sh '''
+                        echo "Sending success email..."
+                        echo "Build and Kubernetes deployment for SolutionPlus Web App was successful!" | mail -s "Build Success: SolutionPlus" $EMAIL_RECIPIENT
+                    '''
+                }
+            }
+        }
     }
 
     post {
@@ -97,3 +133,4 @@ pipeline {
         }
     }
 }
+
