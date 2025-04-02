@@ -9,7 +9,7 @@ pipeline {
 
     environment {
         DOCKER_REPO = 'mohamedamr99t/solutionplus-final'
-        IMAGE_TAG = "${DOCKER_REPO}:web-img-latest"
+        IMAGE_TAG = "${DOCKER_REPO}:${GIT_COMMIT}"
     }
 
     stages {
@@ -111,26 +111,17 @@ pipeline {
             }
         }
 
-        stage('Verify Kubernetes Resource Limits') {
+        stage('Verify Kubernetes Resources Health') {
             steps {
                 script {
                     echo "Verifying Kubernetes resource limits for CPU and memory..."
                     sh 'kubectl get deployment/my-app -o=jsonpath="{.spec.template.spec.containers[0].resources}"'
-                }
-            }
-        }
 
-        stage('Verify Kubernetes Resources Health') {
-            steps {
-                script {
-                    sh '''
-                        set -e
-                        echo "Verifying the health of Kubernetes pods..."
-                        kubectl get pods --namespace=default
+                    echo "Verifying the health of Kubernetes pods..."
+                    kubectl get pods --namespace=default
 
-                        echo "Checking logs for recent errors..."
-                        kubectl logs -l app=my-app --tail=50
-                    '''
+                    echo "Checking logs for recent errors..."
+                    kubectl logs -l app=my-app --tail=50
                 }
             }
         }
@@ -139,6 +130,17 @@ pipeline {
             steps {
                 script {
                     sh 'df -h'
+                }
+            }
+        }
+
+        stage('Wait for Deployments to Rollout') {
+            steps {
+                script {
+                    def deployments = sh(script: 'kubectl get deployments -o jsonpath="{.items[*].metadata.name}"', returnStdout: true).trim().split()
+                    for (deployment in deployments) {
+                        sh "kubectl rollout status deployment/${deployment} --timeout=60s"
+                    }
                 }
             }
         }
@@ -151,16 +153,22 @@ pipeline {
         }
 
         success {
-            slackSend (channel: 'U08643YCHLM', message: "Jenkins Pipeline SUCCESS: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}")
+            slackSend (
+                channel: 'U08643YCHLM', 
+                message: "Jenkins Pipeline SUCCESS: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}. Git Commit: ${env.GIT_COMMIT}"
+            )
             echo "Build and Kubernetes deployment for SolutionPlus Web App was successful!"
         }
 
         failure {
-            slackSend (channel: 'U08643YCHLM', message: "Jenkins Pipeline FAILURE: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}")
+            slackSend (
+                channel: 'U08643YCHLM', 
+                message: "Jenkins Pipeline FAILURE: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}. Error: ${currentBuild.description}"
+            )
             echo "Build or deployment failed. Please check the logs for errors."
+
             sh 'kubectl rollout undo deployment/my-app'
             sh 'kubectl rollout undo deployment/mysql-db'
         }
-        
     }
 }
