@@ -22,6 +22,21 @@ pipeline {
             }
         }
 
+                stage('Run Unit Tests') {
+                    steps {
+                        script {
+                            echo "Running unit tests..."
+                            sh '''
+                                set -e
+                                cd application
+                                npm install
+                                npm test  # or `npx jest` if using Jest
+                            '''
+                        }
+                    }
+                }
+
+
         stage('Validate Docker Image') {
             steps {
                 script {
