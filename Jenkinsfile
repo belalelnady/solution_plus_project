@@ -6,7 +6,7 @@ Author: DevOps Team
 
 pipeline {
     // Execute pipeline on pre-configured worker node labeled 'worker'
-    agent { label 'worker' }  
+    agent { label 'jenkins-agent' }  
 
     stages {
         // Cleanup stage to ensure fresh workspace for each build
