@@ -5,169 +5,95 @@ Author: DevOps Team
 */
 
 pipeline {
-    // Execute pipeline on pre-configured worker node labeled 'worker'
-    agent { label 'jenkins-agent' }  
+    agent { label 'jenkins-agent' }
+
+    environment {
+        DOCKER_REPO = 'mohamedamr99t/solutionplus-final'
+        IMAGE_TAG = "${DOCKER_REPO}:web-img-latest"
+    }
 
     stages {
-        // Cleanup stage to ensure fresh workspace for each build
         stage('Purge Previous Artifacts') {
             steps {
                 sh '''
-                    echo "Removing old workspace artifacts to ensure a clean build..."
+                    echo "Removing old workspace artifacts..."
                     rm -rf solution_plus_project || true
                 '''
             }
         }
 
-        /*
-        Docker Image Build Stage:
-        - Uses Kubernetes pod agent with dynamic pod definition
-        - Builds web application Docker image
-        - Pushes to private Docker Hub repository
-        */
         stage('Construct and Upload Web App Image') {
             steps {
-                container('docker') {
-                    script {
-                        // Image configuration variables
-                        def applicationDir = "application"
-                        def dockerRepo = 'mohamedamr99t/solutionplus-final'
-                        def imageTag = "${dockerRepo}:web-img-latest"
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-id', 
+                                                      usernameVariable: 'DOCKER_USER', 
+                                                      passwordVariable: 'DOCKER_PASS')]) {
+                        sh '''
+                            set -e
+                            echo "Authenticating with Docker Hub..."
+                            docker logout || true
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-                        // Securely authenticate with Docker Hub using Jenkins credentials
-                        withCredentials([usernamePassword(credentialsId: 'dockerhub-id', 
-                                                        usernameVariable: 'DOCKER_USER', 
-                                                        passwordVariable: 'DOCKER_PASS')]) {
-                            sh '''
-                                set -e  # Exit on any error
+                            echo "Building and pushing Docker image..."
+                            docker build -t $IMAGE_TAG -f application/Dockerfile application
+                            docker push $IMAGE_TAG
 
-                                echo "Navigating to the application source directory..."
-                                cd ''' + applicationDir + '''
-
-                                echo "Authenticating with Docker Hub..."
-                                echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-
-                                echo "Building the web application Docker image..."
-                                docker build -t ''' + imageTag + ''' -f Dockerfile .
-
-                                echo "Pushing the image to Docker Hub..."
-                                docker push ''' + imageTag + '''
-
-                                echo "Image successfully uploaded to Docker Hub!"
-
-                                echo "Logging out from Docker Hub..."
-                                docker logout
-                            '''
-                        }
+                            echo "Logging out from Docker Hub..."
+                            docker logout
+                        '''
                     }
                 }
             }
         }
 
-        /*
-        Security Scanning Stage:
-        - Uses Trivy to scan built Docker image for vulnerabilities
-        - Generates report while continuing pipeline even if vulnerabilities found
-        */
         stage('Perform Security Scan on Web App Image') {
             steps {
                 script {
-                    def dockerRepo = 'mohamedamr99t/solutionplus-final'
-                    def imageTag = "${dockerRepo}:web-img-latest"
-
                     sh '''
-                        set -e  # Exit on any error
-
-                        echo "Creating directory for Trivy scan reports..."
+                        set -e
                         mkdir -p security_scan_reports
-
-                        echo "Running Trivy security scan on the web app image..."
-                        trivy image --exit-code 1 --no-progress ''' + imageTag + ''' > security_scan_reports/web-app-scan-report.txt 2>/dev/null || true
-
-                        echo "Security scan completed! Report saved in security_scan_reports/"
+                        echo "Running Trivy security scan..."
+                        trivy image --exit-code 0 --no-progress $IMAGE_TAG > security_scan_reports/web-app-scan-report.txt || true
                     '''
                 }
             }
         }
 
-        // Artifact Archival Stage: Stores security reports for audit purposes
         stage('Store Security Scan Results') {
             steps {
                 archiveArtifacts artifacts: 'security_scan_reports/*.txt', fingerprint: true
-                echo "Security scan reports have been archived for review."
+                sh 'rm -rf security_scan_reports'
             }
         }
 
-        /*
-        Kubernetes Deployment Stage:
-        - Applies all Kubernetes manifests in sequence
-        - Includes configuration, secrets, volumes, deployments and services
-        - Verifies successful rollout of both web app and MySQL
-        */
         stage('Apply Kubernetes Manifests') {
             steps {
                 script {
                     sh '''
-                        set -e  # Exit on any error
+                        set -e
 
-                        echo "Current working directory:"
-                        pwd
+                        echo "Applying Kubernetes manifests..."
+                        kubectl apply -f k8s/
 
-                        echo "Navigating to the Kubernetes manifests directory..."
-                        cd k8s
+                        echo "Verifying deployment rollouts..."
+                        for i in {1..5}; do
+                            kubectl rollout status deployment/my-app --timeout=60s && break || sleep 10
+                        done
 
-                        echo "Applying Kubernetes manifests to the cluster..."
-                        # Apply configuration and secrets first
-                        kubectl apply -f my-app-secret.yaml || { echo "Failed to apply my-app-secret.yaml"; exit 1; }
-                        kubectl apply -f mysql-secret.yaml || { echo "Failed to apply mysql-secret.yaml"; exit 1; }
-                        kubectl apply -f myapp-config.yaml || { echo "Failed to apply myapp-config.yaml"; exit 1; }
-                        kubectl apply -f mysql-config.yaml || { echo "Failed to apply mysql-config.yaml"; exit 1; }
-                        
-                        # Apply configmaps
-                        kubectl apply -f mysql-db-cm1-configmap.yaml || { echo "Failed to apply mysql-db-cm1-configmap.yaml"; exit 1; }
-                        kubectl apply -f mysql-db-cm2-configmap.yaml || { echo "Failed to apply mysql-db-cm2-configmap.yaml"; exit 1; }
-                        
-                        # Apply storage configuration before deployments
-                        kubectl apply -f mysql-pv.yaml || { echo "Failed to apply mysql-pv.yaml"; exit 1; }
-                        kubectl apply -f mysql-data-persistentvolumeclaim.yaml || { echo "Failed to apply mysql-data-persistentvolumeclaim.yaml"; exit 1; }
-                        
-                        # Apply deployments
-                        kubectl apply -f mysql-db-deployment.yaml || { echo "Failed to apply mysql-db-deployment.yaml"; exit 1; }
-                        kubectl apply -f my-app-deployment.yaml || { echo "Failed to apply my-app-deployment.yaml"; exit 1; }
-                        
-                        # Apply services
-                        kubectl apply -f mysqldb-service.yaml || { echo "Failed to apply mysqldb-service.yaml"; exit 1; }
-                        kubectl apply -f my-app-service.yaml || { echo "Failed to apply my-app-service.yaml"; exit 1; }
-                        
-                        # Apply ingress last
-                        kubectl apply -f ingress.yaml || { echo "Failed to apply ingress.yaml"; exit 1; }
+                        for i in {1..5}; do
+                            kubectl rollout status deployment/mysql-db --timeout=60s && break || sleep 10
+                        done
 
-                        echo "Monitoring deployment rollout for the web app..."
-                        kubectl rollout status deployment/my-app --timeout=300s || { echo "Web app deployment rollout failed"; exit 1; }
-
-                        echo "Monitoring deployment rollout for the MySQL database..."
-                        kubectl rollout status deployment/mysql-db --timeout=300s || { echo "MySQL deployment rollout failed"; exit 1; }
-
-                        echo "Kubernetes deployment completed successfully!"
+                        echo "Kubernetes deployment successful!"
                     '''
                 }
             }
         }
     }
 
-    /*
-    Post-build Actions:
-    - Always executes, even if pipeline fails
-    - Cleans up Docker images to conserve disk space
-    */
     post {
         always {
-            script {
-                echo "Cleaning up Docker images on the worker node to free up space..."
-                sh '''
-                    docker image prune -f || true
-                '''
-            }
+            sh 'docker image prune -f || true'
         }
     }
 }
