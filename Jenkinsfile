@@ -26,11 +26,6 @@ pipeline {
         - Pushes to private Docker Hub repository
         */
         stage('Construct and Upload Web App Image') {
-            agent {
-                kubernetes {
-                    yamlFile 'dynamic-docker-build.yaml'  // Contains pod template with Docker tools
-                }
-            }
             steps {
                 container('docker') {
                     script {
