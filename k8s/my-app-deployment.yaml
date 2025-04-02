@@ -19,8 +19,9 @@ spec:
         image: busybox
         command: ['sh', '-c', 'until nc -z mysql-db 3306; do echo waiting for MySQL; sleep 5; done;']
       containers:
-      - name: u-container
-        image: belalelnady/solution-plus
+      - name: uni-app
+        image: belalelnady/testp
+        imagePullPolicy: Always  
         ports:
           - containerPort: 4444
             protocol: TCP

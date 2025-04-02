@@ -5,6 +5,7 @@ metadata:
    service: mysql-data
   name: mysql-data
 spec:
+  storageClassName: ""
   accessModes:
     - ReadWriteOnce
   resources:

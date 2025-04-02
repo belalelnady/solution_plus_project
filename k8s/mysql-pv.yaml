@@ -10,6 +10,6 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
   hostPath:
-    path: "/tmp/volumes"  
-
+    path: "/tmp/volumes"

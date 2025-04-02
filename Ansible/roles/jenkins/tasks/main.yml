@@ -1,3 +1,8 @@
+- name: Run playbook locally
+  hosts: localhost
+  connection: local
+  become: yes
+  tasks:
     - name: Update APT package cache
       apt:
         update_cache: yes
