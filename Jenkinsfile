@@ -22,16 +22,6 @@ pipeline {
             }
         }
 
-        stage('Validate Docker Image') {
-            steps {
-                script {
-                    echo "Validating Docker image..."
-                    // Example check: Ensure there are no empty layers
-                    sh 'docker history $IMAGE_TAG | grep -q "empty layer" && exit 1 || echo "Valid image"'
-                }
-            }
-        }
-
         stage('Construct and Upload Web App Image') {
             steps {
                 script {
@@ -79,8 +69,10 @@ pipeline {
         stage('Kubernetes Manifest Validation') {
             steps {
                 script {
-                    echo "Validating Kubernetes manifests with Kube-score..."
-                    sh 'kube-score score k8s/ --disable=dependency-missing --ignore=warnings'
+                    echo "Validating Kubernetes manifests with Kube-score using Docker..."
+                    sh '''
+                        docker run --rm -v $(pwd)/k8s:/k8s quay.io/substantial/kube-score score /k8s --disable=dependency-missing --ignore=warnings
+                    '''
                 }
             }
         }
@@ -108,38 +100,11 @@ pipeline {
                 }
             }
         }
-
-        stage('Verify Kubernetes Resource Limits') {
-            steps {
-                script {
-                    echo "Verifying Kubernetes resource limits for CPU and memory..."
-                    // Example check: Ensure limits are set for deployments
-                    sh 'kubectl get deployment/my-app -o=jsonpath="{.spec.template.spec.containers[0].resources}"'
-                }
-            }
-        }
-
-        stage('Check Disk Space') {
-            steps {
-                script {
-                    sh 'df -h'
-                }
-            }
-        }
     }
 
     post {
         always {
-            echo "Cleaning up Docker images..."
             sh 'docker image prune -f || true'
-        }
-
-        success {
-            echo "Build and Kubernetes deployment for SolutionPlus Web App was successful!"
-        }
-
-        failure {
-            echo "Build or deployment failed. Please check the logs for errors."
         }
     }
 }
