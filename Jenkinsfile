@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE = 'Dockerfile'
         KUBE_NAMESPACE = 'default'
         GIT_REPO = 'https://github.com/belalelnady/solution_plus_project.git'
-        GIT_BRANCH = 'application'
+        GIT_BRANCH = 'aya'
     }
 
     stages {
