@@ -146,6 +146,25 @@ pipeline {
         }
     }
 
+
+          stage('Get Ingress External IP') {
+            steps {
+                script {
+                    // Fetch the external IP of the ingress
+                    def ingressIP = sh(script: 'kubectl get ingress my-app-ingress -o=jsonpath="{.status.loadBalancer.ingress[0].ip}"', returnStdout: true).trim()
+                    
+                    // In case DNS is used instead of IP
+                    if (ingressIP == "") {
+                        ingressIP = sh(script: 'kubectl get ingress my-app-ingress -o=jsonpath="{.spec.rules[0].host}"', returnStdout: true).trim()
+                    }
+                    
+                    // Store the URL for later use
+                    env.WEB_APP_URL = "http://$ingressIP"
+                    echo "Website URL: $WEB_APP_URL"
+                }
+            }
+        }
+
     post {
         always {
             echo "Cleaning up Docker images..."
