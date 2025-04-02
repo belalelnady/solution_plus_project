@@ -111,20 +111,21 @@ pipeline {
             }
         }
 
-        stage('Verify Kubernetes Resources Health') {
-            steps {
-                script {
-                    echo "Verifying Kubernetes resource limits for CPU and memory..."
-                    sh 'kubectl get deployment/my-app -o=jsonpath="{.spec.template.spec.containers[0].resources}"'
-
-                    echo "Verifying the health of Kubernetes pods..."
-                    kubectl get pods --namespace=default
-
-                    echo "Checking logs for recent errors..."
-                    kubectl logs -l app=my-app --tail=50
+            stage('Verify Kubernetes Resources Health') {
+                steps {
+                    script {
+                        echo "Verifying Kubernetes resource limits for CPU and memory..."
+                        sh 'kubectl get deployment/my-app -o=jsonpath="{.spec.template.spec.containers[0].resources}"'
+            
+                        echo "Verifying the health of Kubernetes pods..."
+                        sh 'kubectl get pods --namespace="default"'
+            
+                        echo "Checking logs for recent errors..."
+                        sh 'kubectl logs -l app=my-app --tail=50'
+                    }
                 }
             }
-        }
+
 
         stage('Check Disk Space') {
             steps {
