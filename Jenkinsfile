@@ -151,15 +151,16 @@ pipeline {
         }
 
         success {
-            slackSend (channel: '#devops', message: "Jenkins Pipeline SUCCESS: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}")
+            slackSend (channel: 'U08643YCHLM', message: "Jenkins Pipeline SUCCESS: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}")
             echo "Build and Kubernetes deployment for SolutionPlus Web App was successful!"
         }
 
         failure {
-            slackSend (channel: '#devops', message: "Jenkins Pipeline FAILURE: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}")
+            slackSend (channel: 'U08643YCHLM', message: "Jenkins Pipeline FAILURE: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}")
             echo "Build or deployment failed. Please check the logs for errors."
             sh 'kubectl rollout undo deployment/my-app'
             sh 'kubectl rollout undo deployment/mysql-db'
         }
+        
     }
 }
