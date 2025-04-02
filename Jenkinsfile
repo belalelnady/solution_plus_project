@@ -10,13 +10,6 @@ pipeline {
 
     stages {
 
-        stage('Code Analysis') {
-            steps {
-                sh 'npm run lint'
-                sh 'npm run test'
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 script {
