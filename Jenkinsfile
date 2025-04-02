@@ -144,10 +144,8 @@ pipeline {
                 }
             }
         }
-    }
 
-
-          stage('Get Ingress External IP') {
+        stage('Get Ingress External IP') {
             steps {
                 script {
                     // Fetch the external IP of the ingress
@@ -164,6 +162,7 @@ pipeline {
                 }
             }
         }
+    }
 
     post {
         always {
@@ -174,7 +173,7 @@ pipeline {
         success {
             slackSend (
                 channel: 'U08643YCHLM', 
-                message: "Jenkins Pipeline SUCCESS: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}. Git Commit: ${env.GIT_COMMIT}"
+                message: "Jenkins Pipeline SUCCESS: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}. Git Commit: ${env.GIT_COMMIT}. Access the website at: ${env.WEB_APP_URL}"
             )
             echo "Build and Kubernetes deployment for SolutionPlus Web App was successful!"
         }
