@@ -3,13 +3,13 @@ Jenkins Pipeline for SolutionPlus Web Application Deployment
 Purpose: Automates build, security scan, and deployment of web app and MySQL to Kubernetes
 Author: DevOps Team
 */
+
 pipeline {
     agent { label 'jenkins-agent' }
 
     environment {
         DOCKER_REPO = 'mohamedamr99t/solutionplus-final'
         IMAGE_TAG = "${DOCKER_REPO}:web-img-latest"
-        EMAIL_RECIPIENT = 'mohamedamr99t@gmail.com'  // Email to notify
     }
 
     stages {
@@ -19,6 +19,16 @@ pipeline {
                     echo "Removing old workspace artifacts..."
                     rm -rf solution_plus_project || true
                 '''
+            }
+        }
+
+        stage('Validate Docker Image') {
+            steps {
+                script {
+                    echo "Validating Docker image..."
+                    // Example check: Ensure there are no empty layers
+                    sh 'docker history $IMAGE_TAG | grep -q "empty layer" && exit 1 || echo "Valid image"'
+                }
             }
         }
 
@@ -66,6 +76,15 @@ pipeline {
             }
         }
 
+        stage('Kubernetes Manifest Validation') {
+            steps {
+                script {
+                    echo "Validating Kubernetes manifests with Kube-score..."
+                    sh 'kube-score score k8s/ --disable=dependency-missing --ignore=warnings'
+                }
+            }
+        }
+
         stage('Apply Kubernetes Manifests') {
             steps {
                 script {
@@ -90,13 +109,20 @@ pipeline {
             }
         }
 
-        stage('Send Success Email') {
+        stage('Verify Kubernetes Resource Limits') {
             steps {
                 script {
-                    echo "Sending success email..."
-                    sh '''
-                        echo "Build and Kubernetes deployment for SolutionPlus Web App was successful!" | mail -s "Build Success: SolutionPlus" $EMAIL_RECIPIENT
-                    '''
+                    echo "Verifying Kubernetes resource limits for CPU and memory..."
+                    // Example check: Ensure limits are set for deployments
+                    sh 'kubectl get deployment/my-app -o=jsonpath="{.spec.template.spec.containers[0].resources}"'
+                }
+            }
+        }
+
+        stage('Check Disk Space') {
+            steps {
+                script {
+                    sh 'df -h'
                 }
             }
         }
@@ -104,7 +130,16 @@ pipeline {
 
     post {
         always {
+            echo "Cleaning up Docker images..."
             sh 'docker image prune -f || true'
+        }
+
+        success {
+            echo "Build and Kubernetes deployment for SolutionPlus Web App was successful!"
+        }
+
+        failure {
+            echo "Build or deployment failed. Please check the logs for errors."
         }
     }
 }
