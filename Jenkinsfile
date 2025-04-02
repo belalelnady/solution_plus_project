@@ -12,7 +12,6 @@ pipeline {
 
         stage('Code Analysis') {
             steps {
-                sh 'npm install'
                 sh 'npm run lint'
                 sh 'npm run test'
             }
