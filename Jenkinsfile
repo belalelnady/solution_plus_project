@@ -22,38 +22,56 @@ pipeline {
             }
         }
 
-        stage('Run Unit Tests') {
+  stage('Run Unit Tests') {
             steps {
                 script {
-                    echo "Running npm test..."
+                    // 1. Verify Node.js and npm are installed
+                    def nodeCheck = sh(script: 'command -v node', returnStatus: true)
+                    def npmCheck = sh(script: 'command -v npm', returnStatus: true)
                     
-                    // Check if Node.js is installed
-                    if (sh(script: 'command -v node', returnStatus: true) == 0) {
-                        def nodeVersion = sh(script: 'node -v', returnStdout: true).trim()
-                        echo "Node.js version: ${nodeVersion}" >> test_results.txt
-                    } else {
-                        echo "Node.js is not installed!" >> test_results.txt
-                        exit 1
+                    if (nodeCheck != 0) {
+                        error("Node.js is not installed or not in PATH")
+                    }
+                    if (npmCheck != 0) {
+                        error("npm is not installed or not in PATH")
                     }
                     
-                    // Check if npm is installed
-                    if (sh(script: 'command -v npm', returnStatus: true) == 0) {
-                        def npmVersion = sh(script: 'npm -v', returnStdout: true).trim()
-                        echo "npm version: ${npmVersion}" >> test_results.txt
-                    } else {
-                        echo "npm is not installed!" >> test_results.txt
-                        exit 1
+                    // 2. Verify application directory exists
+                    if (!fileExists('application/package.json')) {
+                        error("package.json not found in application directory")
                     }
-
-                    // Run npm test and capture output and errors
-                    sh '''
-                        set -e
-                        cd application
-                        npm test > test_results.txt 2>&1 || {
-                            echo "npm test failed" >> test_results.txt
-                            exit 1
+                    
+                    // 3. Run tests with proper path handling
+                    dir('application') {
+                        try {
+                            sh '''
+                                # Print versions for debugging
+                                echo "Node version: $(node -v)"
+                                echo "npm version: $(npm -v)"
+                                
+                                # Install dependencies
+                                echo "Installing dependencies..."
+                                npm ci || npm install
+                                
+                                # Run tests and capture output
+                                echo "Running tests..."
+                                npm test > ../test_results.txt 2>&1 || {
+                                    echo "Tests failed with exit code $?" >> ../test_results.txt
+                                    exit 1
+                                }
+                                echo "Tests completed successfully" >> ../test_results.txt
+                            '''
+                        } catch (Exception e) {
+                            // Archive results even on failure
+                            archiveArtifacts artifacts: 'test_results.txt'
+                            error("Unit tests failed: ${e.getMessage()}\nSee test_results.txt for details")
                         }
-                    '''
+                    }
+                    
+                    // 4. Store and display results
+                    archiveArtifacts artifacts: 'test_results.txt'
+                    echo "Test results:"
+                    sh 'cat test_results.txt'
                 }
             }
         }
