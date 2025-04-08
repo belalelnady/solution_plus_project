@@ -179,14 +179,41 @@ pipeline {
                 }
             }
         }
+        stage('Rollback on Failure') {
+            when {
+                expression { currentBuild.currentResult == 'FAILURE' }
+            }
+            steps {
+                script {
+                    echo "Build failed. Attempting rollback..."
+
+                    def rollbackDeployment = { name ->
+                        try {
+                            sh "kubectl rollout undo deployment/${name}"
+                            sh "kubectl rollout status deployment/${name} --timeout=60s"
+                            echo "Rollback for ${name} succeeded."
+                        } catch (Exception e) {
+                            echo "Rollback for ${name} failed: ${e.getMessage()}"
+                        }
+                    }
+
+                    rollbackDeployment('my-app')
+                    rollbackDeployment('mysql-db')
+                }
+            }
+        }
+
     }
+
+
+
+
 
     post {
         always {
             echo "Cleaning up Docker images..."
             sh 'docker image prune -f || true'
         }
-
         success {
             slackSend (
                 channel: "${SLACK_CHANNEL}", 
@@ -194,31 +221,14 @@ pipeline {
             )
             echo "Build and Kubernetes deployment for SolutionPlus Web App was successful!"
         }
-
-
-         failure {
+        failure {
             slackSend (
                 channel: "${SLACK_CHANNEL}",  
-                message: "Jenkins Pipeline FAILURE: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}. Error: ${currentBuild.description}"
+                message: "Jenkins Pipeline FAILURE: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}"
             )
-            echo "Build or deployment failed. Attempting rollback..."
-
-            try {
-                sh 'kubectl rollout undo deployment/my-app'
-                sh 'kubectl rollout status deployment/my-app --timeout=60s'
-                echo "Rollback for my-app succeeded."
-            } catch (Exception e) {
-                echo "Rollback for my-app failed: ${e.getMessage()}"
-            }
-
-            try {
-                sh 'kubectl rollout undo deployment/mysql-db'
-                sh 'kubectl rollout status deployment/mysql-db --timeout=60s'
-                echo "Rollback for mysql-db succeeded."
-            } catch (Exception e) {
-                echo "Rollback for mysql-db failed: ${e.getMessage()}"
-            }
+            echo "Build or deployment failed. Rollback attempted in dedicated stage."
+        }
     }
-    }
+
 }
 
