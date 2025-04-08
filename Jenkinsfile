@@ -217,6 +217,7 @@ pipeline {
         success {
             slackSend (
                 channel: "${SLACK_CHANNEL}", 
+                color: 'good',
                 message: "Jenkins Pipeline SUCCESS: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}"
             )
             echo "Build and Kubernetes deployment for SolutionPlus Web App was successful!"
@@ -224,6 +225,7 @@ pipeline {
         failure {
             slackSend (
                 channel: "${SLACK_CHANNEL}",  
+                color: 'danger',
                 message: "Jenkins Pipeline FAILURE: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}"
             )
             echo "Build or deployment failed. Rollback attempted in dedicated stage."
