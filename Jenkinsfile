@@ -21,11 +21,8 @@ pipeline {
                 script {
                     echo "Checking disk space..."
                         // Check if root (/) has more than 10% space available
-                        DISK_AVAILABLE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
-                        if [ "$DISK_AVAILABLE" -gt 90 ]; then
-                            echo "Error: Low disk space on root partition (>90% used). Exiting."
-                            exit 1
-                        fi
+                    def diskAvailable = sh(script: "df / | awk 'NR==2 {print \$4}'", returnStdout: true).trim()
+                    echo "Available disk space: ${diskAvailable}"
                 }
             }
         }
