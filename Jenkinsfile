@@ -86,7 +86,7 @@ pipeline {
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
                             echo "Building and pushing Docker image with cache..."
-                            docker build --cache-from $DOCKER_REPO:cache --tag $IMAGE_TAG -f application/Dockerfile
+                            docker build --cache-from $DOCKER_REPO:cache --tag $IMAGE_TAG ./application
                             docker push $IMAGE_TAG
 
                             echo "Logging out from Docker Hub..."
