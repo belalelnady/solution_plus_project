@@ -34,8 +34,6 @@ services:
       - ./dbModel/schema.sql:/docker-entrypoint-initdb.d/0_init.sql
       - ./dbModel/initialize.sql:/docker-entrypoint-initdb.d/1_init.sql
 
-
-
 networks:
   app-network:
     driver: bridge

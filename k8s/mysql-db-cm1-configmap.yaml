@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  schema.sql: "CREATE TABLE `uni_department` (\n    `id` INT AUTO_INCREMENT PRIMARY KEY,\n    `name` VARCHAR(255) NOT NULL, \n    `description` TEXT,\n    CONSTRAINT UNIQUE (`name`)\n) ENGINE=InnoDB;\n\nCREATE TABLE `uni_building` (\n    `id` INT AUTO_INCREMENT PRIMARY KEY,\n    `departmentid` INT NOT NULL,\n    `name` VARCHAR(255) NOT NULL, \n    `description` TEXT,\n    FOREIGN KEY(`departmentid`) REFERENCES `uni_department`(`id`),\n    CONSTRAINT UNIQUE (`name`)\n) ENGINE=InnoDB;\n\nCREATE TABLE `uni_class` (\n    `id` INT AUTO_INCREMENT PRIMARY KEY,\n    `name` VARCHAR(255) NOT NULL,\n    `starttime` TIME,\n    `endtime` TIME,\n    `buildingid` INT NOT NULL,\n    `departmentid` INT NOT NULL,\n    FOREIGN KEY(`buildingid`) REFERENCES `uni_building`(`id`),\n    FOREIGN KEY(`departmentid`) REFERENCES `uni_department`(`id`)\n) ENGINE=InnoDB;\n\nCREATE TABLE `uni_student` (\n    `id` INT AUTO_INCREMENT PRIMARY KEY,\n    `firstname` VARCHAR(255) NOT NULL,\n    `lastname` VARCHAR(255) NOT NULL,\n    CONSTRAINT `fullname` UNIQUE (`firstname`,`lastname`)\n) ENGINE=InnoDB;\n\nCREATE TABLE `uni_class_enrollment` (\n    `id` INT AUTO_INCREMENT PRIMARY KEY,\n    `studentid` INT NOT NULL,\n    `classid` INT NOT NULL,\n    FOREIGN KEY(`studentid`) REFERENCES `uni_student`(`id`),\n    FOREIGN KEY(`classid`) REFERENCES `uni_class`(`id`),\n    CONSTRAINT UNIQUE (`studentid`,`classid`)\n) ENGINE=InnoDB;\n\n"
+kind: ConfigMap
+metadata:
+  annotations:
+    use-subpath: "true"
+  labels:
+   service: mysql-db
+  name: mysql-db-cm1
