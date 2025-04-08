@@ -5,7 +5,7 @@ metadata:
    service: my-app
   name: my-app
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - name: "4040"
       port: 4040
