@@ -44,32 +44,6 @@ This project is primarily built using the following programming languages and fr
 
 ---
 
-## Screenshots
-
-Below are some visual representations of the project. _(Add your images here, e.g., from `/assets` folder)_:
-
-1. **Home Page**
-   ![Home Page](./screenshots/app.png)
-
-2. **Pipleline**
-   ![Pipeline](./screenshots/build.png)
-   ![Pipeline](./screenshots/pipeline.png)
-   ![Pipeline-slack](./screenshots/jenkins-alert.png)
-
-3. **Deployment Pipeline**
-   ![Deployment Pipeline](./screenshots/deployments.png)
-   ![Deployment Pipeline](./screenshots/monitor-deploym%2Cnet.png)
-
-4. **Monitoring Dashboard**
-   ![Monitoring Dashboard](./screenshots/nodeExporter.png.png)
-   ![Monitoring Dashboard](./screenshots/k8s.png)
-   ![Monitoring Dashboard](./screenshots/Loki.png)
-   ![Monitoring Dashboard](./screenshots/alert.png)
-   ![Monitoring Dashboard](./screenshots/slack-alert-cpu.png)
-   ![Monitoring Dashboard](./screenshots/slack-alert.png)
-
----
-
 ## Installation and Infastructure Setup With Ansible
 
 Follow these steps to set up the project locally:
@@ -183,3 +157,29 @@ If you found this project helpful, please give it a and share it with others!
 You can now customize it further and add images (e.g., screenshots or diagrams) to the relevant sections!
 ```
 ````
+
+---
+
+## Screenshots
+
+Below are some visual representations of the project. _(Add your images here, e.g., from `/assets` folder)_:
+
+1. **Home Page**
+   ![Home Page](./screenshots/app.png)
+
+2. **Pipleline**
+   ![Pipeline](./screenshots/build.png)
+   ![Pipeline](./screenshots/pipeline.png)
+   ![Pipeline-slack](./screenshots/jenkins-alert.png)
+
+3. **Deployment Pipeline**
+   ![Deployment Pipeline](./screenshots/deployments.png)
+   ![Deployment Pipeline](./screenshots/monitor-deploym%2Cnet.png)
+
+4. **Monitoring Dashboard**
+   ![Monitoring Dashboard](./screenshots/nodeExporter.png.png)
+   ![Monitoring Dashboard](./screenshots/k8s.png)
+   ![Monitoring Dashboard](./screenshots/Loki.png)
+   ![Monitoring Dashboard](./screenshots/alert.png)
+   ![Monitoring Dashboard](./screenshots/slack-alert-cpu.png)
+   ![Monitoring Dashboard](./screenshots/slack-alert.png)
