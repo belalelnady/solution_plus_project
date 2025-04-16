@@ -157,9 +157,7 @@ If you found this project helpful, please give it a and share it with others!
 
 You can now customize it further and add images (e.g., screenshots or diagrams) to the relevant sections!
 ```
-````
 
----
 
 ## Screenshots
 
